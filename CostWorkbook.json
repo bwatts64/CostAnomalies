@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# Cost Anamalies Report  \r\nThis workbook utilizes the built in anamaly detection in Azure Log Analytics to detect cost anamalies accross you environment.  \r\n\r\nSelect the Log Analytics Workspace below where you are ingesting you Log Data"
+        "json": "# Cost Anomalies Report  \r\nThis workbook utilizes the built in anomaly detection in Azure Log Analytics to detect cost anomalies accross you environment.  \r\n\r\nSelect the Log Analytics Workspace below where you are ingesting you Log Data"
       },
       "name": "text - 5"
     },
