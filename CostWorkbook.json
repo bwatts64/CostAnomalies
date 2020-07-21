@@ -1,0 +1,248 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Cost Anamalies Report  \r\nThis workbook utilizes the built in anamaly detection in Azure Log Analytics to detect cost anamalies accross you environment.  \r\n\r\nSelect the Log Analytics Workspace below where you are ingesting you Log Data"
+      },
+      "name": "text - 5"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "crossComponentResources": [
+          "value::all"
+        ],
+        "parameters": [
+          {
+            "id": "59e8c1df-e220-429a-b198-6bc3d143f17f",
+            "version": "KqlParameterItem/1.0",
+            "name": "Workspace",
+            "type": 5,
+            "query": "where type == \"microsoft.operationalinsights/workspaces\"",
+            "crossComponentResources": [
+              "value::all"
+            ],
+            "value": "/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/resourceGroups/mms-eus/providers/Microsoft.OperationalInsights/workspaces/Gov-Cloud",
+            "typeSettings": {
+              "resourceTypeFilter": {
+                "microsoft.operationalinsights/workspaces": true
+              },
+              "additionalResourceOptions": []
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources"
+      },
+      "name": "parameters - 4"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let Resources = AzureCostDetails_CL\r\n| where TimeGenerated >= ago(30d)\r\n| project PreTaxCost=todouble(todynamic(CostData_s)[0]),CostDate=todynamic(CostData_s)[1],ResourceID=tostring(todynamic(CostData_s)[2]),ResourceType=tostring(todynamic(CostData_s)[3]),Meter=tostring(todynamic(CostData_s)[4]), MeterCategory=tostring(todynamic(CostData_s)[5]),MeterSubCategory=tostring(todynamic(CostData_s)[6]),Subscription=tostring(todynamic(CostData_s)[7]),ServiceName=tostring(todynamic(CostData_s)[8])\r\n| extend CostDate=todatetime(strcat(substring(CostDate,0,4),'-',substring(CostDate,4,2),'-',substring(CostDate,6,2)))\r\n| where CostDate  >= startofday(ago(21d))\r\n| where CostDate <= endofday(ago(1d))\r\n| distinct CostDate, ResourceID, PreTaxCost, Meter, MeterCategory, MeterSubCategory\r\n| where PreTaxCost > 1\r\n| make-series Cost=sum(PreTaxCost) on CostDate in range(startofday(ago(21d)), endofday(ago(1d)), 1d) by ResourceID \r\n| extend  outliers=series_outliers(Cost, \"ctukey\", double(null), 10, 90)\r\n| mvexpand outliers\r\n| where outliers>=1\r\n| distinct ResourceID;\r\nAzureCostDetails_CL\r\n| project PreTaxCost=todouble(todynamic(CostData_s)[0]),CostDate=todynamic(CostData_s)[1],ResourceID=tostring(todynamic(CostData_s)[2]),ResourceType=tostring(todynamic(CostData_s)[3]),Meter=tostring(todynamic(CostData_s)[4]), MeterCategory=tostring(todynamic(CostData_s)[5]),MeterSubCategory=tostring(todynamic(CostData_s)[6]),Subscription=tostring(todynamic(CostData_s)[7]),ServiceName=tostring(todynamic(CostData_s)[8])\r\n| extend CostDate=todatetime(strcat(substring(CostDate,0,4),'-',substring(CostDate,4,2),'-',substring(CostDate,6,2)))\r\n| where CostDate  >= startofday(ago(5d))\r\n| where CostDate <= endofday(ago(1d))\r\n| where ResourceID in (Resources)\r\n| distinct CostDate, ResourceID, PreTaxCost, Meter, MeterCategory, MeterSubCategory\r\n| make-series Cost=sum(PreTaxCost) on CostDate in range(startofday(ago(5d)), endofday(ago(1d)), 1d) by ResourceID \r\n| extend  outliers=series_outliers(Cost, \"ctukey\", double(null), 10, 90)\r\n| project ResourceID, outliers, Cost",
+        "size": 0,
+        "title": "Anomolies by Resource",
+        "exportMultipleValues": true,
+        "exportedParameters": [
+          {
+            "fieldName": "ResourceID",
+            "parameterName": "ResourceId",
+            "parameterType": 1
+          }
+        ],
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{Workspace}"
+        ],
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "outliers",
+              "formatter": 10,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "Cost",
+              "formatter": 10,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "PreTaxCost",
+              "formatter": 10,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "FailedLogins",
+              "formatter": 10,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        },
+        "chartSettings": {
+          "xAxis": "CostDate",
+          "group": "ResourceId",
+          "createOtherGroup": 15,
+          "xSettings": {},
+          "ySettings": {}
+        }
+      },
+      "customWidth": "50",
+      "name": "query - 0"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let ResourceTypes = AzureCostDetails_CL\r\n| project PreTaxCost=todouble(todynamic(CostData_s)[0]),CostDate=todynamic(CostData_s)[1],ResourceID=tostring(todynamic(CostData_s)[2]),ResourceType=tostring(todynamic(CostData_s)[3]),Meter=tostring(todynamic(CostData_s)[4]), MeterCategory=tostring(todynamic(CostData_s)[5]),MeterSubCategory=tostring(todynamic(CostData_s)[6]),Subscription=tostring(todynamic(CostData_s)[7]),ServiceName=tostring(todynamic(CostData_s)[8])\r\n| extend CostDate=todatetime(strcat(substring(CostDate,0,4),'-',substring(CostDate,4,2),'-',substring(CostDate,6,2)))\r\n| where CostDate  >= startofday(ago(21d))\r\n| where CostDate <= endofday(ago(1d))\r\n| distinct CostDate, ResourceType, PreTaxCost, Meter, MeterCategory, MeterSubCategory\r\n| where PreTaxCost > 1\r\n| make-series Cost=sum(PreTaxCost) on CostDate in range(startofday(ago(21d)), endofday(ago(1d)), 1d) by ResourceType \r\n| extend  outliers=series_outliers(Cost, \"ctukey\", double(null), 10, 90)\r\n| mvexpand outliers\r\n| where outliers>=1\r\n| distinct ResourceType;\r\nAzureCostDetails_CL\r\n| project PreTaxCost=todouble(todynamic(CostData_s)[0]),CostDate=todynamic(CostData_s)[1],ResourceID=tostring(todynamic(CostData_s)[2]),ResourceType=tostring(todynamic(CostData_s)[3]),Meter=tostring(todynamic(CostData_s)[4]), MeterCategory=tostring(todynamic(CostData_s)[5]),MeterSubCategory=tostring(todynamic(CostData_s)[6]),Subscription=tostring(todynamic(CostData_s)[7]),ServiceName=tostring(todynamic(CostData_s)[8])\r\n| extend CostDate=todatetime(strcat(substring(CostDate,0,4),'-',substring(CostDate,4,2),'-',substring(CostDate,6,2)))\r\n| where CostDate  >= startofday(ago(5d))\r\n| where CostDate <= endofday(ago(1d))\r\n| where ResourceType in (ResourceTypes)\r\n| distinct CostDate, ResourceType, PreTaxCost, Meter, MeterCategory, MeterSubCategory\r\n| make-series Cost=sum(PreTaxCost) on CostDate in range(startofday(ago(5d)), endofday(ago(1d)), 1d) by ResourceType \r\n| extend  outliers=series_outliers(Cost, \"ctukey\", double(null), 10, 90)\r\n| project ResourceType, outliers, Cost",
+        "size": 0,
+        "title": "Anomolies by ResourceType",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "exportFieldName": "ResourceType",
+        "exportParameterName": "ResourceType",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{Workspace}"
+        ],
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "PreTaxCost",
+              "formatter": 10,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "outliers",
+              "formatter": 10,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "FailedLogins",
+              "formatter": 10,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        },
+        "chartSettings": {
+          "xAxis": "CostDate",
+          "group": "ResourceId",
+          "createOtherGroup": 15,
+          "xSettings": {},
+          "ySettings": {}
+        }
+      },
+      "customWidth": "50",
+      "name": "query - 0 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureCostDetails_CL\r\n| project PreTaxCost=todouble(todynamic(CostData_s)[0]),CostDate=todynamic(CostData_s)[1],ResourceID=tostring(todynamic(CostData_s)[2]),ResourceType=tostring(todynamic(CostData_s)[3]),Meter=tostring(todynamic(CostData_s)[4]), MeterCategory=tostring(todynamic(CostData_s)[5]),MeterSubCategory=tostring(todynamic(CostData_s)[6]),Subscription=tostring(todynamic(CostData_s)[7]),ServiceName=tostring(todynamic(CostData_s)[8])\r\n| extend CostDate=todatetime(strcat(substring(CostDate,0,4),'-',substring(CostDate,4,2),'-',substring(CostDate,6,2)))\r\n| where ResourceID in ({ResourceId}) \r\n| distinct CostDate, PreTaxCost, ResourceType, ResourceID,Meter, MeterCategory, MeterSubCategory\r\n| where CostDate  >= startofday(ago(7d))\r\n| distinct Meter, MeterCategory, MeterSubCategory, CostDate, PreTaxCost",
+        "size": 0,
+        "title": "Cost by ResourceId",
+        "noDataMessage": "Must select items from Resource Chart",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{Workspace}"
+        ],
+        "visualization": "categoricalbar",
+        "gridSettings": {
+          "sortBy": [
+            {
+              "itemKey": "CostDate",
+              "sortOrder": 1
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "CostDate",
+            "sortOrder": 1
+          }
+        ],
+        "chartSettings": {
+          "xSettings": {},
+          "ySettings": {
+            "min": 0
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "ResourceId",
+        "comparison": "isNotEqualTo"
+      },
+      "customWidth": "50",
+      "name": "query - 2"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureCostDetails_CL\r\n| project PreTaxCost=todouble(todynamic(CostData_s)[0]),CostDate=todynamic(CostData_s)[1],ResourceID=tostring(todynamic(CostData_s)[2]),ResourceType=tostring(todynamic(CostData_s)[3]),Meter=tostring(todynamic(CostData_s)[4]), MeterCategory=tostring(todynamic(CostData_s)[5]),MeterSubCategory=tostring(todynamic(CostData_s)[6]),Subscription=tostring(todynamic(CostData_s)[7]),ServiceName=tostring(todynamic(CostData_s)[8])\r\n| extend CostDate=todatetime(strcat(substring(CostDate,0,4),'-',substring(CostDate,4,2),'-',substring(CostDate,6,2)))\r\n| where ResourceType in ('{ResourceType}')  \r\n| distinct CostDate, PreTaxCost, ResourceType, ResourceID,Meter, MeterCategory, MeterSubCategory\r\n| where CostDate  >= startofday(ago(7d))\r\n| distinct Meter, MeterCategory, MeterSubCategory, CostDate, PreTaxCost, ResourceType",
+        "size": 0,
+        "showAnalytics": true,
+        "title": "Cost by ResourceType",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{Workspace}"
+        ],
+        "visualization": "categoricalbar",
+        "sortBy": [],
+        "chartSettings": {
+          "xSettings": {},
+          "ySettings": {
+            "min": 0
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "ResourceType",
+        "comparison": "isNotEqualTo"
+      },
+      "customWidth": "50",
+      "name": "query - 2 - Copy"
+    }
+  ],
+  "fallbackResourceIds": [
+    "Azure Monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

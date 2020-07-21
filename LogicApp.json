@@ -1,0 +1,348 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "actions": {
+      "For_each": {
+        "actions": {
+          "Set_JSON": {
+            "inputs": {
+              "name": "jsonString",
+              "value": "@{items('For_each')}"
+            },
+            "runAfter": {},
+            "type": "SetVariable"
+          }
+        },
+        "foreach": "@body('Parse_JSON')?['properties']?['rows']",
+        "runAfter": {
+          "Parse_JSON": [
+            "Succeeded"
+          ]
+        },
+        "type": "Foreach"
+      },
+      "HTTP": {
+        "inputs": {
+          "authentication": {
+            "audience": "https://management.azure.com",
+            "clientId": "d74113da-9bb2-465c-8bf7-407df65e1b0e",
+            "secret": "@variables('Secret')",
+            "tenant": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+            "type": "ActiveDirectoryOAuth"
+          },
+          "body": {
+            "dataset": {
+              "aggregation": {
+                "totalCost": {
+                  "function": "Sum",
+                  "name": "PreTaxCost"
+                }
+              },
+              "granularity": "Daily",
+              "grouping": [
+                {
+                  "name": "ResourceId",
+                  "type": "Dimension"
+                },
+                {
+                  "name": "ResourceType",
+                  "type": "dimension"
+                },
+                {
+                  "name": "Meter",
+                  "type": "dimension"
+                },
+                {
+                  "name": "MeterCategory",
+                  "type": "dimension"
+                },
+                {
+                  "name": "MeterSubcategory",
+                  "type": "dimension"
+                },
+                {
+                  "name": "SubscriptionName",
+                  "type": "dimension"
+                },
+                {
+                  "name": "ServiceName",
+                  "type": "dimension"
+                },
+                {
+                  "name": "ServiceTier",
+                  "type": "dimension"
+                }
+              ]
+            },
+            "timePeriod": {
+              "from": "@{variables('Day')}",
+              "to": "@{variables('Day')}"
+            },
+            "timeframe": "Custom",
+            "type": "Usage"
+          },
+          "method": "POST",
+          "uri": "https://management.azure.com/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/providers/Microsoft.CostManagement/query?api-version=2019-11-01"
+        },
+        "runAfter": {
+          "Initialize_Secret": [
+            "Succeeded"
+          ]
+        },
+        "type": "Http"
+      },
+      "Initialize_Secret": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "Secret",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        },
+        "runAfter": {
+          "Set_Day": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "Initialize_jsonString_Variable": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "jsonString",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
+      "Parse_JSON": {
+        "inputs": {
+          "content": "@body('HTTP')",
+          "schema": {
+            "properties": {
+              "content": {
+                "properties": {
+                  "eTag": {},
+                  "id": {
+                    "type": "string"
+                  },
+                  "location": {},
+                  "name": {
+                    "type": "string"
+                  },
+                  "properties": {
+                    "properties": {
+                      "columns": {
+                        "items": {
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "type"
+                          ],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      "nextLink": {},
+                      "rows": {
+                        "items": {
+                          "type": "array"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "sku": {},
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "schema": {
+                "properties": {
+                  "properties": {
+                    "properties": {
+                      "eTag": {
+                        "properties": {},
+                        "type": "object"
+                      },
+                      "id": {
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "location": {
+                        "properties": {},
+                        "type": "object"
+                      },
+                      "name": {
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "properties": {
+                        "properties": {
+                          "properties": {
+                            "properties": {
+                              "columns": {
+                                "properties": {
+                                  "items": {
+                                    "properties": {
+                                      "properties": {
+                                        "properties": {
+                                          "name": {
+                                            "properties": {
+                                              "type": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "type": "object"
+                                          },
+                                          "type": {
+                                            "properties": {
+                                              "type": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "type": "object"
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      "required": {
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "type": "array"
+                                      },
+                                      "type": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "nextLink": {
+                                "properties": {
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "rows": {
+                                "properties": {
+                                  "items": {
+                                    "properties": {
+                                      "type": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "sku": {
+                        "properties": {},
+                        "type": "object"
+                      },
+                      "type": {
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "runAfter": {
+          "HTTP": [
+            "Succeeded"
+          ]
+        },
+        "type": "ParseJson"
+      },
+      "Set_Day": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "Day",
+              "type": "string",
+              "value": "@{addDays(utcNow(),-1, 'yyyy-MM-dd')}"
+            }
+          ]
+        },
+        "runAfter": {
+          "Initialize_jsonString_Variable": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      }
+    },
+    "contentVersion": "1.0.0.0",
+    "outputs": {},
+    "parameters": {},
+    "triggers": {
+      "Recurrence": {
+        "recurrence": {
+          "frequency": "Hour",
+          "interval": 24,
+          "startTime": "2020-05-08T14:00:00Z"
+        },
+        "type": "Recurrence"
+      }
+    }
+  },
+  "parameters": {}
+}
