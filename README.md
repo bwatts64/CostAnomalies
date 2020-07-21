@@ -13,7 +13,7 @@ Below we will walk through a solution that calls the Azure Cost Management Rest 
 
 1) Create a new Logic Apps and select "Blank Logic App" Template  
 
-<img src="./pics/BlankTemplate.png" alt="Designer"  Width="200">  
+<img src="/pics/BlankTemplate.png" alt="Designer"  Width="200">  
 
 2) In the template designer select code view  
 
