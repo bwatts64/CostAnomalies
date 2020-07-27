@@ -57,6 +57,8 @@ Below we will walk through a solution that calls the Azure Cost Management Rest 
 
 10) In the Expression field enter the below and then click on "Ok"  
 
+    concat('{"CostData":',items('For_each'), '}')
+
 <img src="./pics/Expression.PNG" alt="Expression"  Width="300">   
 
 11) For the Custom Log Name enter "AuzreCostDetails". The action should look like: 
