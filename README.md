@@ -44,7 +44,7 @@ Before starting you'll need to create a storage account with a blob container to
 
 1) Modify the "Days to Look Back" step. This determines how much data you want to pull so by default it's set to -30 which will pull 30 days.
 
-<img src="./pics/Age.PNG" alt="Age"  Width="450">  
+<img src="./pics/AGE.PNG" alt="Age"  Width="450">  
 
 2) Modify the "Export Name" step. This determines the name given to your export in Cost Management.
 
