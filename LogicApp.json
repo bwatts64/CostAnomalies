@@ -1,348 +1,414 @@
 {
   "definition": {
-    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-    "actions": {
-      "For_each": {
-        "actions": {
-          "Set_JSON": {
-            "inputs": {
-              "name": "jsonString",
-              "value": "@{items('For_each')}"
-            },
-            "runAfter": {},
-            "type": "SetVariable"
-          }
-        },
-        "foreach": "@body('Parse_JSON')?['properties']?['rows']",
-        "runAfter": {
-          "Parse_JSON": [
-            "Succeeded"
-          ]
-        },
-        "type": "Foreach"
-      },
-      "HTTP": {
-        "inputs": {
-          "authentication": {
-            "audience": "https://management.azure.com",
-            "clientId": "d74113da-9bb2-465c-8bf7-407df65e1b0e",
-            "secret": "@variables('Secret')",
-            "tenant": "72f988bf-86f1-41af-91ab-2d7cd011db47",
-            "type": "ActiveDirectoryOAuth"
-          },
-          "body": {
-            "dataset": {
-              "aggregation": {
-                "totalCost": {
-                  "function": "Sum",
-                  "name": "PreTaxCost"
-                }
-              },
-              "granularity": "Daily",
-              "grouping": [
-                {
-                  "name": "ResourceId",
-                  "type": "Dimension"
-                },
-                {
-                  "name": "ResourceType",
-                  "type": "dimension"
-                },
-                {
-                  "name": "Meter",
-                  "type": "dimension"
-                },
-                {
-                  "name": "MeterCategory",
-                  "type": "dimension"
-                },
-                {
-                  "name": "MeterSubcategory",
-                  "type": "dimension"
-                },
-                {
-                  "name": "SubscriptionName",
-                  "type": "dimension"
-                },
-                {
-                  "name": "ServiceName",
-                  "type": "dimension"
-                },
-                {
-                  "name": "ServiceTier",
-                  "type": "dimension"
-                }
-              ]
-            },
-            "timePeriod": {
-              "from": "@{variables('Day')}",
-              "to": "@{variables('Day')}"
-            },
-            "timeframe": "Custom",
-            "type": "Usage"
-          },
-          "method": "POST",
-          "uri": "https://management.azure.com/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/providers/Microsoft.CostManagement/query?api-version=2019-11-01"
-        },
-        "runAfter": {
-          "Initialize_Secret": [
-            "Succeeded"
-          ]
-        },
-        "type": "Http"
-      },
-      "Initialize_Secret": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "Secret",
-              "type": "string",
-              "value": ""
-            }
-          ]
-        },
-        "runAfter": {
-          "Set_Day": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
-      },
-      "Initialize_jsonString_Variable": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "jsonString",
-              "type": "string"
-            }
-          ]
-        },
-        "runAfter": {},
-        "type": "InitializeVariable"
-      },
-      "Parse_JSON": {
-        "inputs": {
-          "content": "@body('HTTP')",
-          "schema": {
-            "properties": {
-              "content": {
-                "properties": {
-                  "eTag": {},
-                  "id": {
-                    "type": "string"
-                  },
-                  "location": {},
-                  "name": {
-                    "type": "string"
-                  },
-                  "properties": {
-                    "properties": {
-                      "columns": {
-                        "items": {
-                          "properties": {
-                            "name": {
-                              "type": "string"
-                            },
-                            "type": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "name",
-                            "type"
-                          ],
-                          "type": "object"
-                        },
-                        "type": "array"
-                      },
-                      "nextLink": {},
-                      "rows": {
-                        "items": {
-                          "type": "array"
-                        },
-                        "type": "array"
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "actions": {
+          "Days_to_Look_Back": {
+              "inputs": {
+                  "variables": [
+                      {
+                          "name": "Age",
+                          "type": "integer",
+                          "value": -30
                       }
-                    },
-                    "type": "object"
-                  },
-                  "sku": {},
-                  "type": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                  ]
               },
-              "schema": {
-                "properties": {
-                  "properties": {
-                    "properties": {
-                      "eTag": {
-                        "properties": {},
-                        "type": "object"
-                      },
-                      "id": {
-                        "properties": {
-                          "type": {
-                            "type": "string"
-                          }
-                        },
-                        "type": "object"
-                      },
-                      "location": {
-                        "properties": {},
-                        "type": "object"
-                      },
-                      "name": {
-                        "properties": {
-                          "type": {
-                            "type": "string"
-                          }
-                        },
-                        "type": "object"
-                      },
+              "runAfter": {},
+              "type": "InitializeVariable"
+          },
+          "Delete_Export_Job": {
+              "inputs": {
+                  "authentication": {
+                      "audience": "https://management.azure.com",
+                      "type": "ManagedServiceIdentity"
+                  },
+                  "method": "DELETE",
+                  "uri": "https://management.azure.com/@{variables('scope')}/providers/Microsoft.CostManagement/exports/@{variables('ExportName')}?api-version=2019-11-01"
+              },
+              "runAfter": {
+                  "EndDate": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "Http"
+          },
+          "EndDate": {
+              "inputs": {
+                  "variables": [
+                      {
+                          "name": "EndDate",
+                          "type": "string",
+                          "value": "@{formatDateTime(utcNow(), 'yyyy-MM-dd')}"
+                      }
+                  ]
+              },
+              "runAfter": {
+                  "StartDate": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "InitializeVariable"
+          },
+          "Execute_Export_Job": {
+              "inputs": {
+                  "authentication": {
+                      "audience": "https://management.azure.com",
+                      "type": "ManagedServiceIdentity"
+                  },
+                  "method": "POST",
+                  "uri": "https://management.azure.com/@{variables('scope')}/providers/Microsoft.CostManagement/exports/@{variables('ExportName')}/run?api-version=2019-11-01"
+              },
+              "runAfter": {
+                  "Update_Export_Job": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "Http"
+          },
+          "Export_Name": {
+              "inputs": {
+                  "variables": [
+                      {
+                          "name": "ExportName",
+                          "type": "string",
+                          "value": "MSInternal90Days"
+                      }
+                  ]
+              },
+              "runAfter": {
+                  "Days_to_Look_Back": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "InitializeVariable"
+          },
+          "FilePath": {
+              "inputs": {
+                  "variables": [
+                      {
+                          "name": "FilePath",
+                          "type": "string"
+                      }
+                  ]
+              },
+              "runAfter": {
+                  "Status": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "InitializeVariable"
+          },
+          "Query_Scope": {
+              "inputs": {
+                  "variables": [
+                      {
+                          "name": "scope",
+                          "type": "string",
+                          "value": "subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f"
+                      }
+                  ]
+              },
+              "runAfter": {
+                  "Export_Name": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "InitializeVariable"
+          },
+          "StartDate": {
+              "inputs": {
+                  "variables": [
+                      {
+                          "name": "StartDate",
+                          "type": "string",
+                          "value": "@{addDays(utcNow(),variables('Age'), 'yyyy-MM-dd')}"
+                      }
+                  ]
+              },
+              "runAfter": {
+                  "Query_Scope": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "InitializeVariable"
+          },
+          "Status": {
+              "inputs": {
+                  "variables": [
+                      {
+                          "name": "Status",
+                          "type": "string",
+                          "value": "InProgress"
+                      }
+                  ]
+              },
+              "runAfter": {
+                  "Execute_Export_Job": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "InitializeVariable"
+          },
+          "Update_Export_Job": {
+              "inputs": {
+                  "authentication": {
+                      "audience": "https://management.azure.com",
+                      "type": "ManagedServiceIdentity"
+                  },
+                  "body": {
                       "properties": {
-                        "properties": {
-                          "properties": {
-                            "properties": {
-                              "columns": {
-                                "properties": {
-                                  "items": {
-                                    "properties": {
-                                      "properties": {
-                                        "properties": {
-                                          "name": {
-                                            "properties": {
-                                              "type": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "type": "object"
-                                          },
-                                          "type": {
-                                            "properties": {
-                                              "type": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "type": "object"
-                                          }
-                                        },
-                                        "type": "object"
-                                      },
-                                      "required": {
-                                        "items": {
-                                          "type": "string"
-                                        },
-                                        "type": "array"
-                                      },
-                                      "type": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "type": "object"
+                          "definition": {
+                              "dataset": {
+                                  "configuration": {
+                                      "columns": [
+                                          "UsageDateTime",
+                                          "MeterId",
+                                          "InstanceId",
+                                          "ResourceLocation",
+                                          "PreTaxCost",
+                                          "ResourceGroup",
+                                          "ResourceType",
+                                          "TagsDy"
+                                      ]
                                   },
-                                  "type": {
-                                    "type": "string"
-                                  }
-                                },
-                                "type": "object"
+                                  "granularity": "Daily"
                               },
-                              "nextLink": {
-                                "properties": {
-                                  "type": {
-                                    "type": "string"
-                                  }
-                                },
-                                "type": "object"
+                              "timePeriod": {
+                                  "from": "@{variables('StartDate')}",
+                                  "to": "@{variables('EndDate')}"
                               },
-                              "rows": {
-                                "properties": {
-                                  "items": {
-                                    "properties": {
-                                      "type": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "type": "object"
-                                  },
-                                  "type": {
-                                    "type": "string"
-                                  }
-                                },
-                                "type": "object"
-                              }
-                            },
-                            "type": "object"
+                              "timeframe": "Custom"
                           },
-                          "type": {
-                            "type": "string"
+                          "deliveryInfo": {
+                              "destination": {
+                                  "container": "cost",
+                                  "resourceId": "/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/resourceGroups/costanamolies/providers/Microsoft.Storage/storageAccounts/costanalysissa",
+                                  "rootFolderPath": "data"
+                              }
+                          },
+                          "format": "Csv",
+                          "schedule": {
+                              "recurrence": "Daily",
+                              "recurrencePeriod": {
+                                  "from": "@{addDays(utcNow(),2, 'yyyy-MM-dd')}",
+                                  "to": "@{addDays(utcNow(),4, 'yyyy-MM-dd')}"
+                              },
+                              "status": "Inactive"
                           }
-                        },
-                        "type": "object"
-                      },
-                      "sku": {
-                        "properties": {},
-                        "type": "object"
-                      },
-                      "type": {
-                        "properties": {
-                          "type": {
-                            "type": "string"
-                          }
-                        },
-                        "type": "object"
                       }
-                    },
-                    "type": "object"
                   },
-                  "type": {
-                    "type": "string"
+                  "method": "PUT",
+                  "uri": "https://management.azure.com/@{variables('scope')}/providers/Microsoft.CostManagement/exports/@{variables('ExportName')}?api-version=2019-11-01"
+              },
+              "runAfter": {
+                  "Delete_Export_Job": [
+                      "Succeeded",
+                      "Failed"
+                  ]
+              },
+              "type": "Http"
+          },
+          "Wait_for_execution_to_complete": {
+              "actions": {
+                  "Get_Execution_History": {
+                      "inputs": {
+                          "authentication": {
+                              "audience": "https://management.azure.com",
+                              "type": "ManagedServiceIdentity"
+                          },
+                          "method": "GET",
+                          "uri": "https://management.azure.com/@{variables('scope')}/providers/Microsoft.CostManagement/exports/@{variables('ExportName')}/runHistory?api-version=2019-11-01"
+                      },
+                      "runAfter": {
+                          "Wait_10min": [
+                              "Succeeded"
+                          ]
+                      },
+                      "type": "Http"
+                  },
+                  "Parse_Body": {
+                      "inputs": {
+                          "content": "@body('Get_Execution_History')",
+                          "schema": {
+                              "properties": {
+                                  "value": {
+                                      "items": {
+                                          "properties": {
+                                              "eTag": {},
+                                              "id": {
+                                                  "type": "string"
+                                              },
+                                              "name": {},
+                                              "properties": {
+                                                  "properties": {
+                                                      "executionType": {
+                                                          "type": "string"
+                                                      },
+                                                      "fileName": {},
+                                                      "processingEndTime": {},
+                                                      "processingStartTime": {},
+                                                      "runSettings": {
+                                                          "properties": {
+                                                              "definition": {
+                                                                  "properties": {
+                                                                      "dataSet": {
+                                                                          "properties": {
+                                                                              "configuration": {
+                                                                                  "properties": {
+                                                                                      "columns": {
+                                                                                          "items": {
+                                                                                              "type": "string"
+                                                                                          },
+                                                                                          "type": "array"
+                                                                                      }
+                                                                                  },
+                                                                                  "type": "object"
+                                                                              },
+                                                                              "granularity": {
+                                                                                  "type": "string"
+                                                                              }
+                                                                          },
+                                                                          "type": "object"
+                                                                      },
+                                                                      "timePeriod": {
+                                                                          "properties": {
+                                                                              "from": {
+                                                                                  "type": "string"
+                                                                              },
+                                                                              "to": {
+                                                                                  "type": "string"
+                                                                              }
+                                                                          },
+                                                                          "type": "object"
+                                                                      },
+                                                                      "timeframe": {
+                                                                          "type": "string"
+                                                                      },
+                                                                      "type": {
+                                                                          "type": "string"
+                                                                      }
+                                                                  },
+                                                                  "type": "object"
+                                                              },
+                                                              "deliveryInfo": {
+                                                                  "properties": {
+                                                                      "destination": {
+                                                                          "properties": {
+                                                                              "container": {
+                                                                                  "type": "string"
+                                                                              },
+                                                                              "resourceId": {
+                                                                                  "type": "string"
+                                                                              },
+                                                                              "rootFolderPath": {
+                                                                                  "type": "string"
+                                                                              }
+                                                                          },
+                                                                          "type": "object"
+                                                                      }
+                                                                  },
+                                                                  "type": "object"
+                                                              },
+                                                              "format": {
+                                                                  "type": "string"
+                                                              }
+                                                          },
+                                                          "type": "object"
+                                                      },
+                                                      "status": {
+                                                          "type": "string"
+                                                      },
+                                                      "submittedBy": {},
+                                                      "submittedTime": {
+                                                          "type": "string"
+                                                      }
+                                                  },
+                                                  "type": "object"
+                                              },
+                                              "type": {}
+                                          },
+                                          "required": [
+                                              "id",
+                                              "name",
+                                              "type",
+                                              "eTag",
+                                              "properties"
+                                          ],
+                                          "type": "object"
+                                      },
+                                      "type": "array"
+                                  }
+                              },
+                              "type": "object"
+                          }
+                      },
+                      "runAfter": {
+                          "Get_Execution_History": [
+                              "Succeeded"
+                          ]
+                      },
+                      "type": "ParseJson"
+                  },
+                  "Set_File_Name": {
+                      "inputs": {
+                          "name": "FilePath",
+                          "value": "@{first(body('Parse_Body')?['value'])?['properties']?['fileName']}"
+                      },
+                      "runAfter": {
+                          "Set_Status": [
+                              "Succeeded"
+                          ]
+                      },
+                      "type": "SetVariable"
+                  },
+                  "Set_Status": {
+                      "inputs": {
+                          "name": "Status",
+                          "value": "@{first(body('Parse_Body')?['value'])?['properties']?['status']}"
+                      },
+                      "runAfter": {
+                          "Parse_Body": [
+                              "Succeeded"
+                          ]
+                      },
+                      "type": "SetVariable"
+                  },
+                  "Wait_10min": {
+                      "inputs": {
+                          "interval": {
+                              "count": 10,
+                              "unit": "Minute"
+                          }
+                      },
+                      "runAfter": {},
+                      "type": "Wait"
                   }
-                },
-                "type": "object"
-              }
-            },
-            "type": "object"
+              },
+              "expression": "@equals(variables('Status'), 'Completed')",
+              "limit": {
+                  "count": 60,
+                  "timeout": "PT1H"
+              },
+              "runAfter": {
+                  "FilePath": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "Until"
           }
-        },
-        "runAfter": {
-          "HTTP": [
-            "Succeeded"
-          ]
-        },
-        "type": "ParseJson"
       },
-      "Set_Day": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "Day",
-              "type": "string",
-              "value": "@{addDays(utcNow(),-1, 'yyyy-MM-dd')}"
-            }
-          ]
-        },
-        "runAfter": {
-          "Initialize_jsonString_Variable": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
+      "contentVersion": "1.0.0.0",
+      "outputs": {},
+      "parameters": {},
+      "triggers": {
+          "Recurrence": {
+              "recurrence": {
+                  "frequency": "Hour",
+                  "interval": 24,
+                  "startTime": "2020-05-08T14:00:00Z"
+              },
+              "type": "recurrence"
+          }
       }
-    },
-    "contentVersion": "1.0.0.0",
-    "outputs": {},
-    "parameters": {},
-    "triggers": {
-      "Recurrence": {
-        "recurrence": {
-          "frequency": "Hour",
-          "interval": 24,
-          "startTime": "2020-05-08T14:00:00Z"
-        },
-        "type": "Recurrence"
-      }
-    }
   },
   "parameters": {}
 }
