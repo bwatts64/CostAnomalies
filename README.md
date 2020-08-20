@@ -4,7 +4,7 @@ Below we will walk through a solution that calls the Azure Cost Management Expor
 
 ## Required Resources  
 
--- Storage Account
+-- Storage Account  
 -- Logic Apps  
 -- Log Analytics Workspace  
 -- Azure Monitor Workbook   
