@@ -258,7 +258,7 @@ We can now work on setting up alerting on anamalies. In the below example we'll 
     costdata  
     | where ResourceGroup in (ids)  
     | where UsageDateTime >= ago(7d)  
-    | project PreTaxCost, InstanceId, UsageDateTime  
+    | summarize PreTaxCost=sum(PreTaxCost) by InstanceId, UsageDateTime  
     | order by InstanceId, UsageDateTime desc  
 
 14) Add a new action after the last step (but still in the **if true** section) and search for **Outlook**. Choose the **Office 365 Outllok** actions  
