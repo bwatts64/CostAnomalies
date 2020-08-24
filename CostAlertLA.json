@@ -1,0 +1,164 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Run_query_and_list_results": {
+                "inputs": {
+                    "body": "let costdata=externaldata(UsageDateTime:datetime, MeterId:string, InstanceId:string, ResourceLocation:string, PreTaxCost:decimal,ResourceGroup:string, ResourceType:string, Tags:string )\n[\n  h@\"https://costanalysissa.blob.core.windows.net/cost/data/MSInternal90Days.csv?sv=2019-12-12&ss=b&srt=sco&sp=rx&se=2030-08-20T22:50:04Z&st=2020-08-20T14:50:04Z&spr=https&sig=EZQDVS3gjLNGQ6tiwbyOHk36M7gT%2BgD5bnnhXiIY%2BJQ%3D\"\n]\nwith(format=\"csv\",ignoreFirstRecord=true);\nlet ids=costdata\n| order by UsageDateTime\n| where PreTaxCost >= 5\n| make-series Cost=sum(PreTaxCost) on UsageDateTime in range(startofday(ago(90d)), endofday(ago(1d)), 1d) by ResourceGroup\n| extend outliers=series_decompose_anomalies(Cost)\n| mvexpand outliers, UsageDateTime\n| summarize arg_max(todatetime(UsageDateTime), *) by ResourceGroup\n| where outliers>=0\n| distinct ResourceGroup;\ncostdata\n| where ResourceGroup in (ids)\n| where UsageDateTime >= ago(7d)\n| summarize PreTaxCost=sum(PreTaxCost) by ResourceGroup, todatetime(UsageDateTime)\n| order by ResourceGroup, UsageDateTime desc",
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuremonitorlogs_1']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/queryData",
+                    "queries": {
+                        "resourcegroups": "mms-eus",
+                        "resourcename": "gov-cloud",
+                        "resourcetype": "Log Analytics Workspace",
+                        "subscriptions": "5f1c1322-cebc-4ea3-8779-fac7d666e18f",
+                        "timerange": "90d"
+                    }
+                },
+                "runAfter": {
+                    "Run_query_and_visualize_results_2": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Run_query_and_visualize_results": {
+                "inputs": {
+                    "body": "let costdata=externaldata(UsageDateTime:datetime, MeterId:string, InstanceId:string, ResourceLocation:string, PreTaxCost:decimal,ResourceGroup:string, ResourceType:string, Tags:string )\n[\n  h@\"https://costanalysissa.blob.core.windows.net/cost/data/MSInternal90Days.csv?sv=2019-12-12&ss=b&srt=sco&sp=rx&se=2030-08-20T22:50:04Z&st=2020-08-20T14:50:04Z&spr=https&sig=EZQDVS3gjLNGQ6tiwbyOHk36M7gT%2BgD5bnnhXiIY%2BJQ%3D\"\n]\nwith(format=\"csv\",ignoreFirstRecord=true);\nlet ids=costdata\n| order by UsageDateTime\n| where PreTaxCost >= 5\n| make-series Cost=sum(PreTaxCost) on UsageDateTime in range(startofday(ago(90d)), endofday(ago(1d)), 1d) by ResourceGroup\n| extend outliers=series_decompose_anomalies(Cost)\n| mvexpand outliers, UsageDateTime\n| summarize arg_max(todatetime(UsageDateTime), *) by ResourceGroup\n| where outliers>=0\n| distinct ResourceGroup;\ncostdata\n| where ResourceGroup in (ids)\n| where UsageDateTime >= ago(7d)\n| summarize PreTaxCost=sum(PreTaxCost) by ResourceGroup, UsageDateTime\n| order by ResourceGroup, UsageDateTime desc",
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuremonitorlogs_1']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/visualizeQuery",
+                    "queries": {
+                        "resourcegroups": "mms-eus",
+                        "resourcename": "gov-cloud",
+                        "resourcetype": "Log Analytics Workspace",
+                        "subscriptions": "5f1c1322-cebc-4ea3-8779-fac7d666e18f",
+                        "timerange": "30d",
+                        "visType": "Html Table"
+                    }
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Run_query_and_visualize_results_2": {
+                "inputs": {
+                    "body": "let costdata=externaldata(UsageDateTime:datetime, MeterId:string, InstanceId:string, ResourceLocation:string, PreTaxCost:decimal,ResourceGroup:string, ResourceType:string, Tags:string )\n[\n  h@\"https://costanalysissa.blob.core.windows.net/cost/data/MSInternal90Days.csv?sv=2019-12-12&ss=b&srt=sco&sp=rx&se=2030-08-20T22:50:04Z&st=2020-08-20T14:50:04Z&spr=https&sig=EZQDVS3gjLNGQ6tiwbyOHk36M7gT%2BgD5bnnhXiIY%2BJQ%3D\"\n]\nwith(format=\"csv\",ignoreFirstRecord=true);\nlet ids=costdata\n| order by UsageDateTime\n| where PreTaxCost >= 5\n| make-series Cost=sum(PreTaxCost) on UsageDateTime in range(startofday(ago(90d)), endofday(ago(1d)), 1d) by ResourceGroup\n| extend outliers=series_decompose_anomalies(Cost)\n| mvexpand outliers, UsageDateTime\n| summarize arg_max(todatetime(UsageDateTime), *) by ResourceGroup\n| where outliers>=0\n| distinct ResourceGroup;\ncostdata\n| where ResourceGroup in (ids)\n| where UsageDateTime >= ago(7d)\n| project PreTaxCost, InstanceId, UsageDateTime\n| order by InstanceId, UsageDate desc",
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuremonitorlogs_1']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/visualizeQuery",
+                    "queries": {
+                        "resourcegroups": "mms-eus",
+                        "resourcename": "gov-cloud",
+                        "resourcetype": "Log Analytics Workspace",
+                        "subscriptions": "5f1c1322-cebc-4ea3-8779-fac7d666e18f",
+                        "timerange": "90d",
+                        "visType": "Html Table"
+                    }
+                },
+                "runAfter": {
+                    "Run_query_and_visualize_results": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Send_an_email_(V2)": {
+                "inputs": {
+                    "body": {
+                        "Attachments": [
+                            {
+                                "ContentBytes": "@{body('Run_query_and_visualize_results')?['attachmentContent']}",
+                                "Name": "RGCost7Days.jpeg"
+                            },
+                            {
+                                "ContentBytes": "@{body('Run_query_and_visualize_results_2')?['attachmentContent']}",
+                                "Name": "ResourceIdCost7Days.jpeg"
+                            }
+                        ],
+                        "Body": "<p>The following Resource Groups had cost anamolies yesterday.<br>\n<br>\n@{body('Run_query_and_list_results')?['value']}&nbsp;</p>",
+                        "Subject": "Cost Anomalies",
+                        "To": "bwatts@microsoft.com"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['office365']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/v2/Mail"
+                },
+                "runAfter": {
+                    "Run_query_and_list_results": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "When_a_blob_is_added_or_modified_(properties_only)": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azureblob']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/default/triggers/batch/onupdatedfile",
+                    "queries": {
+                        "folderId": "/cost/data/",
+                        "maxFileCount": 1
+                    }
+                },
+                "recurrence": {
+                    "frequency": "Minute",
+                    "interval": 1
+                },
+                "splitOn": "@triggerBody()",
+                "type": "ApiConnection"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azureblob": {
+                    "connectionId": "/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/resourceGroups/LogicAppsExamples/providers/Microsoft.Web/connections/azureblob-5",
+                    "connectionName": "azureblob-5",
+                    "id": "/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/providers/Microsoft.Web/locations/eastus/managedApis/azureblob"
+                },
+                "azuremonitorlogs_1": {
+                    "connectionId": "/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/resourceGroups/LogicAppsExamples/providers/Microsoft.Web/connections/azuremonitorlogs-1",
+                    "connectionName": "azuremonitorlogs-1",
+                    "id": "/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/providers/Microsoft.Web/locations/eastus/managedApis/azuremonitorlogs"
+                },
+                "office365": {
+                    "connectionId": "/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/resourceGroups/LogicAppsExamples/providers/Microsoft.Web/connections/office365-1",
+                    "connectionName": "office365-1",
+                    "id": "/subscriptions/5f1c1322-cebc-4ea3-8779-fac7d666e18f/providers/Microsoft.Web/locations/eastus/managedApis/office365"
+                }
+            }
+        }
+    }
+}
